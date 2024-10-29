@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": false,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx"
+  },
+  "include": ["src", "public"],
+
+  "exclude": [
+    "src/**/__tests__/**",
+    "**/__snapshots__/**",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx",
+    "build",
+    "src/playground",
+    "storybook-static",
+    "src/stories/*",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "src/test"
+  ],
+
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

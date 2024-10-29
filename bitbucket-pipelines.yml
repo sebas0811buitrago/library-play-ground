@@ -1,0 +1,89 @@
+image: node:16.19.0-alpine
+options:
+  docker: true
+  size: 2x
+clone:
+  depth: full
+definitions:
+  caches:
+    sonar: ~/.sonar/cache # Caching SonarCloud artifacts will speed up your build
+  steps:
+    - step: &sonarcloud
+        name: Build and analyze on SonarCloud
+        caches:
+          - node
+          - sonar
+        script:
+          - npm install --quiet
+          - pipe: sonarsource/sonarcloud-scan:2.0.0
+            # - pipe: sonarsource/sonarcloud-quality-gate:0.1.4
+            variables:
+              SONAR_TOKEN: ${SONAR_TOKEN}
+    - step: &soos-sca
+        name: 'SOOS SCA'
+        image: python:3.8-alpine3.16
+        services:
+          - docker
+        caches:
+          - pip
+        script:
+          - pip3 install awscli
+          - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+          - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+          - aws configure set default.region us-east-1
+          - eval $(aws ecr get-login --no-include-email | sed 's;https://;;g')
+          - pipe: docker://$AWS_ECR_URI/purplelab-soos-sca:latest
+
+            variables:
+              SOOS_CLIENT_ID: ${SOOS_CLIENT_ID}
+              SOOS_API_KEY: ${SOOS_API_KEY}
+
+    - step: &bucketS3-storybook
+        name: 'Build storybook'
+        caches:
+          - node
+        script:
+          - npm install
+          - npm run build-storybook
+          - pipe: atlassian/aws-s3-deploy:1.1.0
+            variables:
+              AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID_DEV
+              AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY_DEV
+              S3_BUCKET: $S3_BUCKET_DEV
+              ACL: 'public-read'
+              LOCAL_PATH: 'storybook-static'
+
+  services:
+    docker:
+      memory: 2048
+pipelines:
+  branches: #these will run on every push of the branch
+    develop:
+      - step: *sonarcloud
+      - step: *soos-sca
+
+    master:
+      # - step: *bucketS3-storybook
+      - step:
+          caches:
+            - docker
+          services:
+            - docker
+          size: 2x
+          script:
+            - apk update
+            - apk add --no-cache py-pip python3
+            - apk add jq
+            - apk add git
+            - git config user.email wi63naithoy0n4w69ho1gfuxf1xot6@bots.bitbucket.org
+            - git config user.password ATCTT3xFfGN0iOO7rQioBRdViDm1m9zh8l3fy1-_G1gqzYGRMQpz18m_2pUmX5Prau_UaSJB-ui_NHWq1l2aFGRAxqTdUqw9DZiX8PbKx5YuNTCAL1zF8uULTU9viOZigD6iQv-nDSOt48jHA-YxqyRimCIJsU6jSkjsH5_IjM2Kutv4NCRmV40=FC505844
+            - pip install awscli
+            - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            - aws configure set default.region us-east-1
+            - aws codeartifact login --tool npm --repository purplelab --domain purplelab --domain-owner 261254701870
+            - npm install
+            - npm publish
+            - ./create_tag.sh
+      - step: *sonarcloud
+      - step: *soos-sca
