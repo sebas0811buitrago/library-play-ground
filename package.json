@@ -1,7 +1,8 @@
 {
-  "name": "@purplelab/healthnexus-library-ui",
-  "version": "8.3.2",
+  "name": "library-playground-aggrid",
+  "version": "0.0.0",
   "author": "Source Meridian",
+  "description": "A demo package for Total TypeScript",
   "files": [
     "build",
     "lib"
